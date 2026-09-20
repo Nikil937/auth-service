@@ -7,6 +7,9 @@ import (
 	"github.com/Nikil937/auth-service/internal/config"
 	"github.com/Nikil937/auth-service/internal/database"
 	"github.com/Nikil937/auth-service/internal/delivery/http"
+	"github.com/Nikil937/auth-service/internal/delivery/http/handler"
+	"github.com/Nikil937/auth-service/internal/repository"
+	"github.com/Nikil937/auth-service/internal/service"
 )
 
 func main() {
@@ -20,7 +23,11 @@ func main() {
 
 	defer db.Close()
 
-	router := http.NewRouter()
+	userRepo := repository.NewPostgresUserRepository(db)
+	authService := service.NewAuthService(userRepo)
+	authHandler := handler.NewAuthHandler(authService)
+
+	router := http.NewRouter(authHandler)
 
 	if err := router.Run(":" + cfg.AppPort); err != nil {
 		log.Fatalf("failed to start server: %v", err)
