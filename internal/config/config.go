@@ -1,10 +1,15 @@
 package config
 
-import "os"
+import (
+	"os"
+	"time"
+)
 
 type Config struct {
-	AppPort     string
-	DatabaseURL string
+	AppPort      string
+	DatabaseURL  string
+	JWTSecret    string
+	JWTAccessTTL time.Duration
 }
 
 func Load() Config {
@@ -18,8 +23,25 @@ func Load() Config {
 		databaseURL = "postgres://postgres:postgres@localhost:5433/auth?sslmode=disable"
 	}
 
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "secret!@#$%^&*()password"
+	}
+
+	jwtTTLString := os.Getenv("JWT_ACCESS_TTL")
+	if jwtTTLString == "" {
+		jwtTTLString = "15m"
+	}
+
+	jwtAccessTTL, err := time.ParseDuration(jwtTTLString)
+	if err != nil {
+		jwtAccessTTL = 15 * time.Minute
+	}
+
 	return Config{
-		AppPort:     port,
-		DatabaseURL: databaseURL,
+		AppPort:      port,
+		DatabaseURL:  databaseURL,
+		JWTSecret:    jwtSecret,
+		JWTAccessTTL: jwtAccessTTL,
 	}
 }

@@ -24,7 +24,7 @@ func main() {
 	defer db.Close()
 
 	userRepo := repository.NewPostgresUserRepository(db)
-	authService := service.NewAuthService(userRepo)
+	authService := service.NewAuthService(userRepo, cfg.JWTSecret, cfg.JWTAccessTTL)
 	authHandler := handler.NewAuthHandler(authService)
 
 	router := http.NewRouter(authHandler)
