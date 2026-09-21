@@ -27,7 +27,7 @@ func main() {
 	authService := service.NewAuthService(userRepo, cfg.JWTSecret, cfg.JWTAccessTTL)
 	authHandler := handler.NewAuthHandler(authService)
 
-	router := http.NewRouter(authHandler)
+	router := http.NewRouter(authHandler, cfg.JWTSecret)
 
 	if err := router.Run(":" + cfg.AppPort); err != nil {
 		log.Fatalf("failed to start server: %v", err)

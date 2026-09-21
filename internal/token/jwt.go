@@ -1,6 +1,7 @@
 package token
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -33,4 +34,29 @@ func GenerateAccessToken(userID uuid.UUID, role string, secret string, ttl time.
 	}
 
 	return signedToken, nil
+}
+
+func ParseAccessToken(tokenString string, secret string) (*Claims, error) {
+	claims := &Claims{}
+
+	parsedToken, err := jwt.ParseWithClaims(
+		tokenString,
+		claims,
+		func(token *jwt.Token) (any, error) {
+			if token.Method != jwt.SigningMethodHS256 {
+				return nil, fmt.Errorf("unexpected signing method")
+			}
+
+			return []byte(secret), nil
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if !parsedToken.Valid {
+		return nil, fmt.Errorf("invalid token")
+	}
+
+	return claims, nil
 }

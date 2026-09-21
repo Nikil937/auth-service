@@ -9,6 +9,7 @@ import (
 	"github.com/Nikil937/auth-service/internal/domain"
 	"github.com/Nikil937/auth-service/internal/repository"
 	"github.com/Nikil937/auth-service/internal/token"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -81,5 +82,13 @@ func (s *AuthService) Login(ctx context.Context, email string, password string) 
 	}
 
 	return accessToken, nil
+}
 
+func (s *AuthService) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
+	user, err := s.userRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("find user by id: %w", err)
+	}
+
+	return user, nil
 }

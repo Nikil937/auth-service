@@ -4,10 +4,11 @@ import (
 	"net/http"
 
 	"github.com/Nikil937/auth-service/internal/delivery/http/handler"
+	"github.com/Nikil937/auth-service/internal/delivery/http/middleware"
 	"github.com/gin-gonic/gin"
 )
 
-func NewRouter(authHandler *handler.AuthHandler) *gin.Engine {
+func NewRouter(authHandler *handler.AuthHandler, jwtSecret string) *gin.Engine {
 	router := gin.Default()
 
 	router.GET("/health", func(c *gin.Context) {
@@ -18,6 +19,11 @@ func NewRouter(authHandler *handler.AuthHandler) *gin.Engine {
 
 	router.POST("/auth/register", authHandler.Register)
 	router.POST("/auth/login", authHandler.Login)
+
+	protected := router.Group("/")
+	protected.Use(middleware.AuthMiddleware(jwtSecret))
+
+	protected.GET("/me", authHandler.Me)
 
 	return router
 }
