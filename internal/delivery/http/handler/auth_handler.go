@@ -127,7 +127,7 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		return
 	}
 
-	accessToken, err := h.authService.Refresh(c.Request.Context(), req.RefreshToken)
+	tokens, err := h.authService.Refresh(c.Request.Context(), req.RefreshToken)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": "invalid refresh token",
@@ -136,6 +136,27 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"access_token": accessToken,
+		"access_token":  tokens.AccessToken,
+		"refresh_token": tokens.RefreshToken,
 	})
+}
+
+func (h *AuthHandler) Logout(c *gin.Context) {
+	req := &RefreshRequest{}
+
+	if err := c.ShouldBindJSON(req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid request body",
+		})
+		return
+	}
+
+	if err := h.authService.Logout(c.Request.Context(), req.RefreshToken); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "failed to logout",
+		})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }

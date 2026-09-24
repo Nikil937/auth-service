@@ -119,22 +119,45 @@ func (s *AuthService) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.Us
 	return user, nil
 }
 
-func (s *AuthService) Refresh(ctx context.Context, refreshToken string) (string, error) {
+func (s *AuthService) Refresh(ctx context.Context, refreshToken string) (*TokenPair, error) {
 	userID, err := s.refreshRepo.Get(ctx, refreshToken)
 	if err != nil {
-		return "", fmt.Errorf("get refresh session: %w", err)
+		return nil, fmt.Errorf("get refresh session: %w", err)
 	}
 
 	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
-		return "", fmt.Errorf("find user by id: %w", err)
+		return nil, fmt.Errorf("find user by id: %w", err)
 	}
 
-	result, err := token.GenerateAccessToken(user.ID, user.Role, s.jwtSecret, s.jwtAccessTTL)
+	if err := s.refreshRepo.Delete(ctx, refreshToken); err != nil {
+		return nil, fmt.Errorf("delete old refresh session: %w", err)
+	}
+
+	accessToken, err := token.GenerateAccessToken(user.ID, user.Role, s.jwtSecret, s.jwtAccessTTL)
 	if err != nil {
-		return "", fmt.Errorf("generate access token: %w", err)
+		return nil, fmt.Errorf("generate access token: %w", err)
 	}
 
-	return result, nil
+	newRefreshToken, err := token.GenerateRefreshToken()
+	if err != nil {
+		return nil, fmt.Errorf("generate refresh token: %w", err)
+	}
 
+	if err := s.refreshRepo.Save(ctx, newRefreshToken, user.ID, s.jwtRefreshTTL); err != nil {
+		return nil, fmt.Errorf("save refresh session: %w", err)
+	}
+
+	return &TokenPair{
+		AccessToken:  accessToken,
+		RefreshToken: newRefreshToken,
+	}, nil
+}
+
+func (s *AuthService) Logout(ctx context.Context, refreshToken string) error {
+	if err := s.refreshRepo.Delete(ctx, refreshToken); err != nil {
+		return fmt.Errorf("delete refresh session: %w", err)
+	}
+
+	return nil
 }
