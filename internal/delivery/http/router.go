@@ -25,6 +25,15 @@ func NewRouter(authHandler *handler.AuthHandler, jwtSecret string) *gin.Engine {
 	protected := router.Group("/")
 	protected.Use(middleware.AuthMiddleware(jwtSecret))
 
+	admin := protected.Group("/admin")
+	admin.Use(middleware.RequireRole("admin"))
+
+	admin.GET("/test", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "admin access granted",
+		})
+	})
+
 	protected.GET("/me", authHandler.Me)
 
 	return router
