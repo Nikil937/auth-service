@@ -15,16 +15,31 @@ import (
 )
 
 type AuthService struct {
-	userRepo     repository.UserRepository
-	jwtSecret    string
-	jwtAccessTTL time.Duration
+	userRepo      repository.UserRepository
+	jwtSecret     string
+	jwtAccessTTL  time.Duration
+	refreshRepo   repository.RefreshRepository
+	jwtRefreshTTL time.Duration
 }
 
-func NewAuthService(userRepo repository.UserRepository, jwtSecret string, jwtAccessTTL time.Duration) *AuthService {
+type TokenPair struct {
+	AccessToken  string
+	RefreshToken string
+}
+
+func NewAuthService(
+	userRepo repository.UserRepository,
+	jwtSecret string,
+	jwtAccessTTL time.Duration,
+	refreshRepo repository.RefreshRepository,
+	jwtRefreshTTL time.Duration,
+) *AuthService {
 	return &AuthService{
-		userRepo:     userRepo,
-		jwtSecret:    jwtSecret,
-		jwtAccessTTL: jwtAccessTTL,
+		userRepo:      userRepo,
+		jwtSecret:     jwtSecret,
+		jwtAccessTTL:  jwtAccessTTL,
+		refreshRepo:   refreshRepo,
+		jwtRefreshTTL: jwtRefreshTTL,
 	}
 }
 
@@ -56,10 +71,10 @@ func (s *AuthService) Register(ctx context.Context, email string, password strin
 	return user, nil
 }
 
-func (s *AuthService) Login(ctx context.Context, email string, password string) (string, error) {
+func (s *AuthService) Login(ctx context.Context, email string, password string) (*TokenPair, error) {
 	user, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
-		return "", errors.New("invalid email or password")
+		return nil, errors.New("invalid email or password")
 	}
 
 	err = bcrypt.CompareHashAndPassword(
@@ -67,7 +82,7 @@ func (s *AuthService) Login(ctx context.Context, email string, password string) 
 		[]byte(password),
 	)
 	if err != nil {
-		return "", errors.New("invalid email or password")
+		return nil, errors.New("invalid email or password")
 	}
 
 	accessToken, err := token.GenerateAccessToken(
@@ -77,11 +92,22 @@ func (s *AuthService) Login(ctx context.Context, email string, password string) 
 		s.jwtAccessTTL,
 	)
 	if err != nil {
-		return "", fmt.Errorf("generate access token: %w", err)
-
+		return nil, fmt.Errorf("generate access token: %w", err)
 	}
 
-	return accessToken, nil
+	refreshToken, err := token.GenerateRefreshToken()
+	if err != nil {
+		return nil, fmt.Errorf("generate refresh token: %w", err)
+	}
+
+	if err := s.refreshRepo.Save(ctx, refreshToken, user.ID, s.jwtRefreshTTL); err != nil {
+		return nil, fmt.Errorf("save refresh session: %w", err)
+	}
+
+	return &TokenPair{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, nil
 }
 
 func (s *AuthService) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
@@ -91,4 +117,24 @@ func (s *AuthService) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.Us
 	}
 
 	return user, nil
+}
+
+func (s *AuthService) Refresh(ctx context.Context, refreshToken string) (string, error) {
+	userID, err := s.refreshRepo.Get(ctx, refreshToken)
+	if err != nil {
+		return "", fmt.Errorf("get refresh session: %w", err)
+	}
+
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return "", fmt.Errorf("find user by id: %w", err)
+	}
+
+	result, err := token.GenerateAccessToken(user.ID, user.Role, s.jwtSecret, s.jwtAccessTTL)
+	if err != nil {
+		return "", fmt.Errorf("generate access token: %w", err)
+	}
+
+	return result, nil
+
 }

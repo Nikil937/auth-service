@@ -19,6 +19,7 @@ func NewRouter(authHandler *handler.AuthHandler, jwtSecret string) *gin.Engine {
 
 	router.POST("/auth/register", authHandler.Register)
 	router.POST("/auth/login", authHandler.Login)
+	router.POST("/auth/refresh", authHandler.Refresh)
 
 	protected := router.Group("/")
 	protected.Use(middleware.AuthMiddleware(jwtSecret))

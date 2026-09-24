@@ -23,8 +23,17 @@ func main() {
 
 	defer db.Close()
 
+	redisClient, err := database.NewRedisClient(ctx, cfg.RedisAddr)
+	if err != nil {
+		log.Fatalf("failed to connect to redis: %v", err)
+	}
+
+	defer redisClient.Close()
+
+	refreshRepo := repository.NewRedisRefreshRepository(redisClient)
+
 	userRepo := repository.NewPostgresUserRepository(db)
-	authService := service.NewAuthService(userRepo, cfg.JWTSecret, cfg.JWTAccessTTL)
+	authService := service.NewAuthService(userRepo, cfg.JWTSecret, cfg.JWTAccessTTL, refreshRepo, cfg.JWTRefreshTTL)
 	authHandler := handler.NewAuthHandler(authService)
 
 	router := http.NewRouter(authHandler, cfg.JWTSecret)

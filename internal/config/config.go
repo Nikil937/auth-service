@@ -6,10 +6,12 @@ import (
 )
 
 type Config struct {
-	AppPort      string
-	DatabaseURL  string
-	JWTSecret    string
-	JWTAccessTTL time.Duration
+	AppPort       string
+	DatabaseURL   string
+	JWTSecret     string
+	JWTAccessTTL  time.Duration
+	RedisAddr     string
+	JWTRefreshTTL time.Duration
 }
 
 func Load() Config {
@@ -38,10 +40,27 @@ func Load() Config {
 		jwtAccessTTL = 15 * time.Minute
 	}
 
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
+	}
+
+	jwtRefreshTTLString := os.Getenv("JWT_REFRESH_TTL")
+	if jwtRefreshTTLString == "" {
+		jwtRefreshTTLString = "168h"
+	}
+
+	jwtRefreshTTL, err := time.ParseDuration(jwtRefreshTTLString)
+	if err != nil {
+		jwtRefreshTTL = 168 * time.Hour
+	}
+
 	return Config{
-		AppPort:      port,
-		DatabaseURL:  databaseURL,
-		JWTSecret:    jwtSecret,
-		JWTAccessTTL: jwtAccessTTL,
+		AppPort:       port,
+		DatabaseURL:   databaseURL,
+		JWTSecret:     jwtSecret,
+		JWTAccessTTL:  jwtAccessTTL,
+		RedisAddr:     redisAddr,
+		JWTRefreshTTL: jwtRefreshTTL,
 	}
 }
