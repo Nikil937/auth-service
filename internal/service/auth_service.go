@@ -27,6 +27,11 @@ type TokenPair struct {
 	RefreshToken string
 }
 
+var (
+	ErrUserAlreadyExists  = errors.New("user already exists")
+	ErrInvalidCredentials = errors.New("invalid email or password")
+)
+
 func NewAuthService(
 	userRepo repository.UserRepository,
 	jwtSecret string,
@@ -46,7 +51,7 @@ func NewAuthService(
 func (s *AuthService) Register(ctx context.Context, email string, password string) (*domain.User, error) {
 	_, err := s.userRepo.FindByEmail(ctx, email)
 	if err == nil {
-		return nil, errors.New("user already exists")
+		return nil, ErrUserAlreadyExists
 	}
 
 	if !errors.Is(err, pgx.ErrNoRows) {
@@ -74,7 +79,7 @@ func (s *AuthService) Register(ctx context.Context, email string, password strin
 func (s *AuthService) Login(ctx context.Context, email string, password string) (*TokenPair, error) {
 	user, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
-		return nil, errors.New("invalid email or password")
+		return nil, ErrInvalidCredentials
 	}
 
 	err = bcrypt.CompareHashAndPassword(
@@ -82,7 +87,7 @@ func (s *AuthService) Login(ctx context.Context, email string, password string) 
 		[]byte(password),
 	)
 	if err != nil {
-		return nil, errors.New("invalid email or password")
+		return nil, ErrInvalidCredentials
 	}
 
 	accessToken, err := token.GenerateAccessToken(
