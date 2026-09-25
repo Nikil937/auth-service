@@ -33,6 +33,18 @@ func NewAuthHandler(authService *service.AuthService) *AuthHandler {
 	}
 }
 
+// Register godoc
+// @Summary Register user
+// @Description Create a new user account
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body RegisterRequest true "Register request"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 409 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /auth/register [post]
 func (h *AuthHandler) Register(c *gin.Context) {
 	req := &RegisterRequest{}
 	err := c.ShouldBindJSON(req)
@@ -65,6 +77,18 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	})
 }
 
+// Login godoc
+// @Summary Login user
+// @Description Authenticate user and return access and refresh tokens
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body LoginRequest true "Login request"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
 	req := &LoginRequest{}
 	err := c.ShouldBindJSON(req)
@@ -100,6 +124,16 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	})
 }
 
+// Me godoc
+// @Summary Get current user
+// @Description Return information about authenticated user
+// @Tags user
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /me [get]
 func (h *AuthHandler) Me(c *gin.Context) {
 	userIDValue, exists := c.Get("user_id")
 	if !exists {
@@ -132,6 +166,17 @@ func (h *AuthHandler) Me(c *gin.Context) {
 	})
 }
 
+// Refresh godoc
+// @Summary Refresh tokens
+// @Description Rotate refresh token and return a new token pair
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body RefreshRequest true "Refresh request"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Router /auth/refresh [post]
 func (h *AuthHandler) Refresh(c *gin.Context) {
 	req := &RefreshRequest{}
 
@@ -156,6 +201,17 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 	})
 }
 
+// Logout godoc
+// @Summary Logout user
+// @Description Delete refresh session
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body RefreshRequest true "Logout request"
+// @Success 204
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /auth/logout [post]
 func (h *AuthHandler) Logout(c *gin.Context) {
 	req := &RefreshRequest{}
 

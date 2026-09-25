@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	_ "github.com/Nikil937/auth-service/docs"
 	"github.com/Nikil937/auth-service/internal/config"
 	"github.com/Nikil937/auth-service/internal/database"
 	"github.com/Nikil937/auth-service/internal/delivery/http"
@@ -12,6 +13,11 @@ import (
 	"github.com/Nikil937/auth-service/internal/service"
 )
 
+// @title Auth Service API
+// @version 1.0
+// @description Authentication service API
+// @host localhost:8080
+// @BasePath /
 func main() {
 	cfg := config.Load()
 

@@ -6,6 +6,8 @@ import (
 	"github.com/Nikil937/auth-service/internal/delivery/http/handler"
 	"github.com/Nikil937/auth-service/internal/delivery/http/middleware"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func NewRouter(authHandler *handler.AuthHandler, jwtSecret string) *gin.Engine {
@@ -16,6 +18,8 @@ func NewRouter(authHandler *handler.AuthHandler, jwtSecret string) *gin.Engine {
 			"status": "ok",
 		})
 	})
+
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	router.POST("/auth/register", authHandler.Register)
 	router.POST("/auth/login", authHandler.Login)
