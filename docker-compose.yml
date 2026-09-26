@@ -2,24 +2,36 @@ services:
   postgres:
     image: postgres:17
     container_name: auth-postgres
-
     environment:
       POSTGRES_DB: auth
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-
     ports:
       - "5433:5432"
-
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
   redis:
     image: redis:7
     container_name: auth-redis
-
     ports:
       - "6379:6379"
+
+  auth-service:
+    build: .
+    container_name: auth-service
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      APP_PORT: 8080
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/auth?sslmode=disable
+      REDIS_ADDR: redis:6379
+      JWT_SECRET: super-secret-key
+      JWT_ACCESS_TTL: 15m
+      JWT_REFRESH_TTL: 168h
+    ports:
+      - "8080:8080"
 
 volumes:
   postgres_data:
